@@ -1,4 +1,4 @@
-import { Component } from 'react';
+import { useState } from 'react';
 import PropTypes from 'prop-types';
 import { toast } from 'react-toastify';
 import { FaSearch } from 'react-icons/fa';
@@ -9,49 +9,45 @@ import {
   StyledSearchForm,
 } from './SearchForm.styled';
 
-export class SearchForm extends Component {
-  state = {
-    query: '',
+export default function SearchForm({ handleQuerySubmit }) {
+  const [query, setQuery] = useState('');
+
+  const handleQueryChange = e => {
+    setQuery(e.currentTarget.value.toLowerCase());
   };
 
-  static propTypes = {
-    handleQuerySubmit: PropTypes.func.isRequired,
-  };
-
-  handleQueryChange = e => {
-    this.setState({ query: e.currentTarget.value.toLowerCase() });
-  };
-
-  handleSubmit = e => {
+  const handleSubmit = e => {
     e.preventDefault();
 
-    if (this.state.query.trim() === '') {
+    if (query.trim() === '') {
       toast.info('Please enter a request');
       return;
     }
-    this.props.handleQuerySubmit(this.state.query);
+    handleQuerySubmit(query);
 
-    this.setState({ query: '' });
+    setQuery('');
   };
 
-  render() {
-    return (
-      <StyledSearchForm className="form" onSubmit={this.handleSubmit}>
-        <SearchFormButton type="submit" className="button">
-          <FaSearch />
-          <SearchButtonLabel className="button-label">Search</SearchButtonLabel>
-        </SearchFormButton>
+  return (
+    <StyledSearchForm className="form" onSubmit={handleSubmit}>
+      <SearchFormButton type="submit" className="button">
+        <FaSearch />
+        <SearchButtonLabel className="button-label">Search</SearchButtonLabel>
+      </SearchFormButton>
 
-        <SearchFormInput
-          className="input"
-          type="text"
-          autoComplete="off"
-          autoFocus
-          placeholder="Search images and photos"
-          value={this.state.query}
-          onChange={this.handleQueryChange}
-        />
-      </StyledSearchForm>
-    );
-  }
+      <SearchFormInput
+        className="input"
+        type="text"
+        autoComplete="off"
+        autoFocus
+        placeholder="Search images and photos"
+        value={query}
+        onChange={handleQueryChange}
+      />
+    </StyledSearchForm>
+  );
 }
+
+SearchForm.propTypes = {
+  handleQuerySubmit: PropTypes.func.isRequired,
+};

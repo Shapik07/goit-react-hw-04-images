@@ -1,5 +1,5 @@
 import { StyledSearchBar } from './Searchbar.styled';
-import { SearchForm } from 'components/SearchForm/SearchForm';
+import SearchForm from 'components/SearchForm/SearchForm';
 
 export default function SearchBar({ handleQuerySubmit }) {
   return (
