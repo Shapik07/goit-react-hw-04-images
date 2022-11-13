@@ -7,7 +7,7 @@ import API from 'services/Pixabey-api';
 import ModalWindow from 'components/Modal/Modal';
 import { Button } from 'components/Button/Button';
 import { Section } from './App.styled';
-import { SearchBar } from 'components/Searchbar/Searchbar';
+import SearchBar from 'components/Searchbar/Searchbar';
 import { GalleryList } from 'components/ImageGallery/ImageGallery';
 
 export class App extends Component {
