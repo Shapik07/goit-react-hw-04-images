@@ -1,4 +1,4 @@
-import { Component } from 'react';
+import { useState, useEffect } from 'react';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import InfoMessage from 'components/Message/Message';
@@ -10,118 +10,105 @@ import { Section } from './App.styled';
 import SearchBar from 'components/Searchbar/Searchbar';
 import { GalleryList } from 'components/ImageGallery/ImageGallery';
 
-export class App extends Component {
-  state = {
-    pictures: [],
-    query: '',
-    page: 1,
-    perPage: 12,
-    error: null,
-    status: 'idle',
-    showModal: false,
-    largePicture: '',
-    showButton: false,
+export default function App() {
+  const [pictures, setPictures] = useState([]);
+  const [query, setQuery] = useState('');
+  const [page, setPage] = useState(1);
+  const [perPage, setPerPage] = useState(12);
+  const [status, setStatus] = useState('idle');
+  const [error, setError] = useState(null);
+  const [showModal, setShowModal] = useState(false);
+  const [largePicture, setLargePicture] = useState('');
+  const [showButton, setShowButton] = useState(false);
+
+  useEffect(() => {
+    if (!query) return;
+
+    setStatus('pending');
+
+    API.PixabayAPI(query, page)
+      .then(pictures => {
+        if (pictures.total === 0) {
+          setStatus('idle');
+          return toast.warn('Woops, nothing found for your request');
+        }
+
+        if (pictures.total > perPage) {
+          setShowButton(true);
+        } else {
+          setShowButton(false);
+        }
+
+        setPictures(prevState => [...prevState, ...pictures.hits]);
+        setStatus('resolved');
+      })
+      .catch(error => {
+        setError(error);
+        setStatus('rejected');
+      });
+  }, [query, page]);
+
+  useEffect(() => {
+    setQuery(query);
+    setPage(page);
+    setPictures([]);
+  }, [query]);
+
+  const openModal = image => {
+    setShowModal(true);
+    setLargePicture(image);
   };
 
-  componentDidUpdate(_, prevState) {
-    const prevQuery = prevState.query;
-    const prevPage = prevState.page;
-    const { query, page, perPage } = this.state;
+  const closeModal = () => {
+    setShowModal(false);
+  };
 
-    if (prevQuery !== query || prevPage !== page) {
-      this.setState({ status: 'pending' });
+  const loadMorePictures = () => {
+    setPage(prevPage => prevPage + 1);
+  };
 
-      API.PixabayAPI(query, page, perPage)
-        .then(pictures => {
-          if (pictures.total === 0) {
-            this.setState({ status: 'idle' });
-            return toast.warn('Woops, nothing found for your request');
-          }
-
-          if (pictures.total > perPage) {
-            this.setState({ showButton: true });
-          } else {
-            this.setState({ showButton: false });
-          }
-
-          this.setState(prevState => ({
-            pictures: [...prevState.pictures, ...pictures.hits],
-            status: 'resolved',
-          }));
-        })
-        .catch(error => this.setState({ error, status: 'rejected' }));
-    }
+  if (status === 'idle') {
+    return (
+      <Section>
+        <SearchBar handleQuerySubmit={setQuery} />
+        <InfoMessage message={'Please enter a request'} />
+        <ToastContainer />
+      </Section>
+    );
   }
 
-  handleQuerySubmit = query => {
-    this.setState({ query, page: 1, pictures: [] });
-  };
+  if (status === 'pending') {
+    return (
+      <Section>
+        <SearchBar handleQuerySubmit={setQuery} />
+        <GalleryList pictures={pictures} onClick={openModal}></GalleryList>
+        <Loader />
+        <ToastContainer />
+      </Section>
+    );
+  }
 
-  openModal = image => {
-    this.setState({ showModal: true, largePicture: image });
-  };
+  if (status === 'rejected') {
+    return (
+      <Section>
+        <SearchBar handleQuerySubmit={setQuery} />
+        <InfoMessage message={error.message} />
+        <ToastContainer />
+      </Section>
+    );
+  }
 
-  closeModal = () => {
-    this.setState({ showModal: false });
-  };
-
-  loadMorePictures = () => {
-    this.setState(prevState => ({
-      page: prevState.page + 1,
-    }));
-  };
-
-  render() {
-    const { pictures, error, status, showModal, largePicture, showButton } =
-      this.state;
-
-    const { handleQuerySubmit, openModal, closeModal, loadMorePictures } = this;
-
-    if (status === 'idle') {
-      return (
-        <Section>
-          <SearchBar handleQuerySubmit={handleQuerySubmit} />
-          <InfoMessage message={'Please enter a request'} />
-          <ToastContainer />
-        </Section>
-      );
-    }
-
-    if (status === 'pending') {
-      return (
-        <Section>
-          <SearchBar handleQuerySubmit={handleQuerySubmit} />
-          <GalleryList pictures={pictures} onClick={openModal}></GalleryList>
-          <Loader />
-          <ToastContainer />
-        </Section>
-      );
-    }
-
-    if (status === 'rejected') {
-      return (
-        <Section>
-          <SearchBar handleQuerySubmit={handleQuerySubmit} />
-          <InfoMessage message={error.message} />
-          <ToastContainer />
-        </Section>
-      );
-    }
-
-    if (status === 'resolved') {
-      return (
-        <Section>
-          <SearchBar handleQuerySubmit={handleQuerySubmit} />
-          <GalleryList pictures={pictures} onClick={openModal}></GalleryList>
-          {showModal && (
-            <ModalWindow closeModal={closeModal} largePicture={largePicture} />
-          )}
-          {showButton && (
-            <Button onClick={loadMorePictures}>Load more...</Button>
-          )}
-          <ToastContainer />
-        </Section>
-      );
-    }
+  if (status === 'resolved') {
+    return (
+      <Section>
+        <SearchBar handleQuerySubmit={setQuery} />
+        <GalleryList pictures={pictures} onClick={openModal}></GalleryList>
+        {showModal && (
+          <ModalWindow closeModal={closeModal} largePicture={largePicture} />
+        )}
+        {showButton && <Button onClick={loadMorePictures}>Load more...</Button>}
+        <ToastContainer />
+      </Section>
+    );
   }
 }
